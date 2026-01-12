@@ -7,8 +7,7 @@
 #
 #  Thank you users! We ❤️ you! - 🌻
 
-"""hackernews-team-agent - An Bindu Agent.
-"""
+"""hackernews-team-agent - An Bindu Agent."""
 
 from hackernews_team_agent.__version__ import __version__
 from hackernews_team_agent.main import (

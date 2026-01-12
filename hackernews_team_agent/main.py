@@ -7,38 +7,25 @@
 #
 #  Thank you users! We ❤️ you! - 🌻
 
-"""hackernews-team-agent - An Bindu Agent.
-
-"""
+"""hackernews-team-agent - An Bindu Agent."""
 
 import argparse
 import asyncio
 import json
 import os
 from pathlib import Path
-from textwrap import dedent
-from typing import Any, Optional
-
+from typing import Any
 
 from agno.agent import Agent
 from agno.models.openrouter import OpenRouter
-from agno.tools.mcp import MultiMCPTools
-from agno.tools.mem0 import Mem0Tools
 from agno.team import Team
-from agno.tools.duckduckgo import DuckDuckGoTools
+from agno.tools.exa import ExaTools
 from agno.tools.hackernews import HackerNewsTools
+from agno.tools.mcp import MultiMCPTools
 from agno.tools.newspaper4k import Newspaper4kTools
-from pydantic import BaseModel
-
-
+from agno.tools.reasoning import ReasoningTools
 from bindu.penguin.bindufy import bindufy
 from dotenv import load_dotenv
-
-class Article(BaseModel):
-    title: str
-    summary: str
-    reference_links: List[str]
-
 
 # Load environment variables from .env file
 load_dotenv()
@@ -83,7 +70,7 @@ def load_config() -> dict:
     # Get path to agent_config.json in project root
     config_path = Path(__file__).parent / "agent_config.json"
 
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         return json.load(f)
 
 
@@ -117,7 +104,7 @@ async def initialize_agent() -> None:
             supports_native_structured_outputs=True,
         ),
         role="Searches the web for information on a topic",
-        tools=[DuckDuckGoTools()],
+        tools=[ExaTools(all=True)],
         add_datetime_to_context=True,
     )
 
@@ -132,12 +119,11 @@ async def initialize_agent() -> None:
         role="Reads articles from URLs.",
         tools=[Newspaper4kTools()],
     )
-    
-    
+
     agent = Team(
         name="HackerNews Team",
         model=OpenRouter(
-            id=model_name,
+            id="anthropic/claude-3.5-sonnet",
             api_key=openrouter_api_key,
             cache_response=True,
             supports_native_structured_outputs=True,
@@ -150,15 +136,16 @@ async def initialize_agent() -> None:
             "Then, ask the web searcher to search for each story to get more information.",
             "Finally, provide a thoughtful and engaging summary.",
         ],
-        output_schema=Article,
+        tools=[ReasoningTools(add_instructions=True)],
         markdown=True,
+        delegate_to_all_members=True,
         show_members_responses=True,
     )
 
     print("✅ Agent initialized")
 
 
-async def cleanup_mcp_tools()-> None:
+async def cleanup_mcp_tools() -> None:
     """Close all MCP server connections."""
     global mcp_tools
 
@@ -186,8 +173,6 @@ async def run_agent(messages: list[dict[str, str]]) -> Any:
     return response
 
 
-
-
 async def handler(messages: list[dict[str, str]]) -> Any:
     """Handle incoming agent messages.
 
@@ -198,7 +183,6 @@ async def handler(messages: list[dict[str, str]]) -> Any:
     Returns:
         Agent response (ManifestWorker will handle extraction)
     """
-    
     # Run agent with messages
     global _initialized
 
@@ -209,7 +193,7 @@ async def handler(messages: list[dict[str, str]]) -> Any:
             # Build environment with API keys
             env = {
                 **os.environ,
-                #"GOOGLE_MAPS_API_KEY": os.getenv("GOOGLE_MAPS_API_KEY", ""),
+                # "GOOGLE_MAPS_API_KEY": os.getenv("GOOGLE_MAPS_API_KEY", ""),
             }
             await initialize_all(env)
             _initialized = True
@@ -217,16 +201,15 @@ async def handler(messages: list[dict[str, str]]) -> Any:
     # Run the async agent
     result = await run_agent(messages)
     return result
-    
 
 
-async def initialize_all(env: Optional[dict[str, str]] = None):
+async def initialize_all(env: dict[str, str] | None = None):
     """Initialize MCP tools and agent.
 
     Args:
         env: Environment variables dict for MCP servers
     """
-    #await initialize_mcp_tools(env)
+    # await initialize_mcp_tools(env)
     await initialize_agent()
 
 
@@ -239,8 +222,8 @@ def main():
     parser.add_argument(
         "--model",
         type=str,
-        default=os.getenv("MODEL_NAME", "openai/gpt-oss-120b:free"),
-        help="Model ID to use (default: openai/gpt-oss-120b:free, env: MODEL_NAME), if you want you can use any free model: https://openrouter.ai/models?q=free",
+        default=os.getenv("MODEL_NAME", "openai/gpt-5-nano"),
+        help="Model ID to use (default: openai/gpt-5-nano, env: MODEL_NAME), if you want you can use any free model: https://openrouter.ai/models?q=free",
     )
 
     parser.add_argument(
@@ -263,9 +246,9 @@ def main():
     mem0_api_key = args.mem0_api_key
 
     if not openrouter_api_key:
-        raise ValueError("OPENROUTER_API_KEY required") # noqa: TRY003
+        raise ValueError("OPENROUTER_API_KEY required")  # noqa: TRY003
     if not mem0_api_key:
-        raise ValueError("MEM0_API_KEY required. Get your API key from: https://app.mem0.ai/dashboard/api-keys") # noqa: TRY003
+        raise ValueError("MEM0_API_KEY required. Get your API key from: https://app.mem0.ai/dashboard/api-keys")  # noqa: TRY003
 
     print(f"🤖 Using model: {model_name}")
     print("🧠 Mem0 memory enabled")

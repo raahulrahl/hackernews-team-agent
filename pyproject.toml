@@ -10,7 +10,6 @@ dependencies = [
     "bindu==2026.1.12",
     "agno>=2.2.0",
     "fastmcp>=2.11.0",
-    
     "requests>=2.31.0",
     "pyperclip>=1.8.0",
     "rich>=13.0.0",
@@ -18,6 +17,8 @@ dependencies = [
     "sqlalchemy>=2.0.45",
     "mem0ai>=1.0.1",
     "ddgs>=9.9.3",
+    "newspaper4k>=0.9.4.1",
+    "exa-py>=2.0.2",
 ]
 classifiers = [
     "Intended Audience :: Developers",

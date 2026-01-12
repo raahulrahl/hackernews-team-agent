@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from hackernews_team_agent.main import handler
 
@@ -15,8 +16,10 @@ async def test_handler_returns_response():
     mock_response.status = "COMPLETED"
 
     # Mock _initialized to skip initialization and run_agent to return our mock
-    with patch("hackernews_team_agent.main._initialized", True), \
-         patch("hackernews_team_agent.main.run_agent", new_callable=AsyncMock, return_value=mock_response):
+    with (
+        patch("hackernews_team_agent.main._initialized", True),
+        patch("hackernews_team_agent.main.run_agent", new_callable=AsyncMock, return_value=mock_response),
+    ):
         result = await handler(messages)
 
     # Verify we get a result back
@@ -36,8 +39,10 @@ async def test_handler_with_multiple_messages():
     mock_response = MagicMock()
     mock_response.run_id = "test-run-id-2"
 
-    with patch("hackernews_team_agent.main._initialized", True), \
-         patch("hackernews_team_agent.main.run_agent", new_callable=AsyncMock, return_value=mock_response) as mock_run:
+    with (
+        patch("hackernews_team_agent.main._initialized", True),
+        patch("hackernews_team_agent.main.run_agent", new_callable=AsyncMock, return_value=mock_response) as mock_run,
+    ):
         result = await handler(messages)
 
     # Verify run_agent was called
@@ -54,10 +59,12 @@ async def test_handler_initialization():
     mock_response = MagicMock()
 
     # Start with _initialized as False to test initialization path
-    with patch("hackernews_team_agent.main._initialized", False), \
-         patch("hackernews_team_agent.main.initialize_all", new_callable=AsyncMock) as _mock_init, \
-         patch("hackernews_team_agent.main.run_agent", new_callable=AsyncMock, return_value=mock_response), \
-         patch("hackernews_team_agent.main._init_lock"):
+    with (
+        patch("hackernews_team_agent.main._initialized", False),
+        patch("hackernews_team_agent.main.initialize_all", new_callable=AsyncMock) as _mock_init,
+        patch("hackernews_team_agent.main.run_agent", new_callable=AsyncMock, return_value=mock_response),
+        patch("hackernews_team_agent.main._init_lock"),
+    ):
         # Note: This test verifies the initialization logic exists
         # In practice, the lock and global state make this harder to test
         # You may want to refactor for better testability

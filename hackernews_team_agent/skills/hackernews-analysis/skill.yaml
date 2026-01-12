@@ -5,13 +5,15 @@ author: raahul@getbindu.com
 
 # Description
 description: |
-  Description of the hackernews-analysis skill.
-  TODO: Update this description with your skill's purpose and capabilities.
+  Multi-agent system that aggregates and analyzes HackerNews stories.
+  Coordinates specialized agents to fetch top posts, read articles, and enrich with web research.
 
 # Tags and Modes
 tags:
   - hackernews-analysis
-  - TODO-add-relevant-tags
+  - news-aggregation
+  - content-curation
+  - web-research
 
 input_modes:
   - text/plain
@@ -23,36 +25,41 @@ output_modes:
 
 # Example Queries
 examples:
-  - "TODO: Add example query 1"
-  - "TODO: Add example query 2"
-  - "TODO: Add example query 3"
+  - "What are the top AI stories on HackerNews today?"
+  - "Summarize the top 5 trending stories on HackerNews"
+  - "Get the latest HackerNews posts about machine learning"
 
 # Detailed Capabilities
 capabilities_detail:
   primary_capability:
     supported: true
-    description: "TODO: Describe your primary capability"
+    description: "Aggregates and analyzes HackerNews stories using multi-agent coordination"
     features:
-      - "TODO: Feature 1"
-      - "TODO: Feature 2"
-    limitations: "TODO: List any limitations"
+      - "Real-time HackerNews API integration"
+      - "Full article content extraction"
+      - "Web search enrichment"
+      - "Structured output with Article model"
+    limitations: "Focused on HackerNews content only, processing time depends on story count"
 
   secondary_capability:
     supported: false
-    planned_version: "TODO: Future version"
-    description: "TODO: Planned feature description"
+    planned_version: "2.0.0"
+    description: "Historical trend analysis and sentiment tracking"
 
 # Requirements
 requirements:
   packages:
-    - "TODO: Add required Python packages"
+    - "agno"
+    - "newspaper4k"
+    - "pydantic"
+    - "bindu"
   system:
-    - "TODO: Add system dependencies if any"
+    - "Python 3.10+"
   min_memory_mb: 256
 
 # Performance Metrics
 performance:
-  avg_processing_time_ms: 1000
+  avg_processing_time_ms: 15000
   max_concurrent_requests: 10
   memory_per_request_mb: 256
   scalability: horizontal
@@ -66,159 +73,146 @@ allowed_tools:
 # Rich Documentation
 documentation:
   overview: |
-    TODO: Provide a comprehensive overview of your skill.
-    Describe what it does, how it works, and what makes it useful.
-    Include information about the underlying technologies or approaches used.
+    Multi-agent team that coordinates HackerNews story analysis.
+    Uses three specialized agents: HackerNews Researcher (fetches top stories),
+    Article Reader (extracts full content), and Web Searcher (enriches with research).
+    Built on Agno framework with OpenRouter models and structured output.
 
   use_cases:
     when_to_use:
-      - "TODO: Scenario 1 when this skill should be used"
-      - "TODO: Scenario 2 when this skill should be used"
-      - "TODO: Scenario 3 when this skill should be used"
+      - "News aggregation and curation platforms"
+      - "Trend analysis and monitoring"
+      - "Automated newsletter generation"
+      - "Content research and summarization"
 
     when_not_to_use:
-      - "TODO: Scenario when this skill should NOT be used"
-      - "TODO: Alternative skill or approach for those scenarios"
-      - "TODO: Limitations or constraints"
+      - "Real-time chat or conversational interfaces"
+      - "Non-HackerNews content analysis"
+      - "Low-latency requirements (< 5 seconds)"
 
   input_structure: |
-    TODO: Describe the expected input format for your skill.
+    Natural language queries about HackerNews stories.
 
     Example:
     {
-      "parameter1": "value1",
-      "parameter2": "value2",
-      "options": {
-        "option1": true,
-        "option2": "value"
-      }
+      "role": "user",
+      "content": "What are the top AI stories on HackerNews?"
     }
 
     Constraints:
-    - TODO: List input constraints
-    - TODO: Validation rules
-    - TODO: Supported formats
+    - Plain text or JSON format
+    - Query should reference HackerNews or trending topics
+    - No specific parameter structure required
 
   output_format: |
-    TODO: Describe the output format your skill produces.
+    Structured Article model with title, summary, and reference links.
 
     Success Response:
     {
-      "success": true,
-      "result": {
-        "data": "TODO: Your result data",
-        "metadata": {
-          "processing_time_ms": 1000,
-          "additional_info": "value"
-        }
-      }
+      "title": "AI Trends on HackerNews",
+      "summary": "Comprehensive analysis of top stories...",
+      "reference_links": [
+        "https://news.ycombinator.com/item?id=123",
+        "https://example.com/article"
+      ]
     }
 
     Error Response:
     {
-      "success": false,
-      "error": {
-        "code": "ERROR_CODE",
-        "message": "Error description"
-      }
+      "error": "Failed to fetch HackerNews stories"
     }
 
   error_handling:
-    - "TODO: Error type 1 and how it's handled"
-    - "TODO: Error type 2 and how it's handled"
-    - "TODO: Timeout behavior and fallback strategies"
-    - "TODO: Validation errors and user feedback"
-    - "TODO: Resource limit handling"
+    - "API failures: Graceful degradation with partial results"
+    - "Article extraction errors: Skip unavailable content"
+    - "Timeout: 30-second limit per agent operation"
+    - "Invalid queries: Return error message with guidance"
+    - "Rate limits: Automatic retry with exponential backoff"
 
   examples:
-    - title: "TODO: Example 1 Title"
+    - title: "Top AI Stories"
       input:
-        parameter1: "value1"
-        parameter2: "value2"
+        role: "user"
+        content: "What are the top AI stories on HackerNews?"
       output:
-        success: true
-        result:
-          data: "example output"
-        metadata:
-          processing_time_ms: 500
+        title: "Top AI Stories on HackerNews"
+        summary: "Analysis of trending AI discussions..."
+        reference_links:
+          - "https://news.ycombinator.com/item?id=123"
 
-    - title: "TODO: Example 2 Title"
+    - title: "Trending Stories Summary"
       input:
-        parameter1: "different_value"
-        options:
-          option1: true
+        role: "user"
+        content: "Summarize the top 5 trending stories"
       output:
-        success: true
-        result:
-          data: "example output 2"
-        metadata:
-          processing_time_ms: 750
+        title: "Top 5 HackerNews Stories"
+        summary: "Comprehensive summary of trending topics..."
+        reference_links:
+          - "https://news.ycombinator.com/item?id=456"
 
   best_practices:
     for_developers:
-      - "TODO: Best practice 1 for implementing this skill"
-      - "TODO: Best practice 2 for error handling"
-      - "TODO: Best practice 3 for performance optimization"
-      - "TODO: Best practice 4 for testing and validation"
+      - "Use async/await for all agent operations"
+      - "Implement graceful degradation for partial failures"
+      - "Cache API responses to reduce latency"
+      - "Test with various query types and edge cases"
 
     for_orchestrators:
-      - "TODO: When to route requests to this skill"
-      - "TODO: How to chain this skill with others"
-      - "TODO: Performance considerations for load balancing"
-      - "TODO: Retry and fallback strategies"
-      - "TODO: Monitoring and observability recommendations"
+      - "Route HackerNews-related queries to this skill"
+      - "Chain with content summarization or sentiment analysis skills"
+      - "Expect 10-30 second processing time per request"
+      - "Implement retry logic with exponential backoff"
+      - "Monitor agent response times and API rate limits"
 
   installation: |
-    TODO: Provide installation instructions for your skill.
+    Install via uv package manager.
 
     Required packages:
-    pip install <your-package-name>
+    uv sync
 
-    Optional dependencies:
-    # TODO: Add platform-specific installation steps if needed
-    # macOS
-    brew install <dependency>
+    Environment variables:
+    OPENROUTER_API_KEY=<your-key>
+    MEM0_API_KEY=<your-key>
 
-    # Ubuntu/Debian
-    apt-get install <dependency>
-
-    # Windows
-    # TODO: Windows-specific instructions
+    Run:
+    uv run python -m hackernews_team_agent
 
   versioning:
     - version: "1.0.0"
-      date: "TODO: Release date"
-      changes: "Initial release with core functionality"
+      date: "2026-01-12"
+      changes: "Initial release with multi-agent HackerNews analysis"
     - version: "1.1.0"
       status: "planned"
-      changes: "TODO: Planned enhancements for next version"
+      changes: "Add historical trend analysis and sentiment tracking"
 
 # Assessment fields for skill negotiation
 assessment:
   keywords:
-    - "TODO: keyword1"
-    - "TODO: keyword2"
-    - "TODO: keyword3"
-    - "TODO: Add relevant keywords for skill matching"
+    - "hackernews"
+    - "news"
+    - "stories"
+    - "trending"
+    - "articles"
+    - "aggregation"
 
   specializations:
-    - domain: "TODO: domain1"
+    - domain: "news-aggregation"
       confidence_boost: 0.3
-    - domain: "TODO: domain2"
+    - domain: "content-curation"
       confidence_boost: 0.2
 
   anti_patterns:
-    - "TODO: Pattern that should NOT match this skill"
-    - "TODO: Alternative skill name or approach"
-    - "TODO: Out of scope operations"
+    - "Real-time chat conversations"
+    - "Non-HackerNews content analysis"
+    - "Image or video processing"
 
   complexity_indicators:
     simple:
-      - "TODO: Simple task indicator 1"
-      - "TODO: Simple task indicator 2"
+      - "Get top HackerNews stories"
+      - "Fetch latest posts"
     medium:
-      - "TODO: Medium complexity indicator 1"
-      - "TODO: Medium complexity indicator 2"
+      - "Summarize top 5 stories with details"
+      - "Analyze trending topics"
     complex:
-      - "TODO: Complex task indicator 1"
-      - "TODO: Complex task indicator 2"
+      - "Deep analysis with web research enrichment"
+      - "Multi-topic trend comparison"

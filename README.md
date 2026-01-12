@@ -24,9 +24,10 @@
 A multi-agent system that aggregates, curates, and analyzes trending HackerNews stories by coordinating specialized agents to fetch top posts, read full articles, enrich with web research, and produce structured summaries with links. Ideal for news aggregation platforms, trend analysis, content curation, and automated newsletters. Powered by real-time API data, web search, and article extraction.. Built on the [Bindu Agent Framework](https://github.com/getbindu/bindu) for the Internet of Agents.
 
 **Key Capabilities:**
-- 🔍 [Add your key capabilities here]
-- ✅ [Add another capability]
-- 🚨 [Add another capability]
+- 🔍 Fetches top stories from HackerNews API
+- 📰 Reads and extracts full article content from URLs
+- 🌐 Enriches stories with web search research
+- 📊 Produces structured summaries with reference links
 
 ---
 
@@ -93,40 +94,40 @@ gh repo create raahulrahl/hackernews-team-agent --public --source=. --remote=ori
 ### Example Queries
 
 ```bash
-# Example query 1
-"[Add example query here]"
+# Get top AI stories
+"What are the top AI stories on HackerNews today?"
 
-# Example query 2
-"[Add another example]"
+# Analyze trending topics
+"Summarize the top 5 trending stories on HackerNews"
 ```
 
 ### Input Formats
 
 **Plain Text:**
 ```
-[Describe expected input format]
+What are the top stories about AI on HackerNews?
 ```
 
 **JSON:**
 ```json
 {
-  "content": "[example content]",
-  "focus": "[example focus]"
+  "role": "user",
+  "content": "Summarize the top 5 HackerNews stories"
 }
 ```
 
 ### Output Structure
 
 The agent returns structured output with:
-- **[Output Component 1]**: Description
-- **[Output Component 2]**: Description
-- **[Output Component 3]**: Description
+- **title**: Article title
+- **summary**: Comprehensive summary of the story
+- **reference_links**: List of relevant URLs and sources
 
 ---
 
 ## 🔌 API Usage
 
-The agent exposes a RESTful API when running. Default endpoint: `http://localhost:3773` 
+The agent exposes a RESTful API when running. Default endpoint: `http://localhost:3773`
 
 ### Quick Start
 
@@ -145,30 +146,32 @@ For complete API documentation, request/response formats, and examples, visit:
 
 ## 🎯 Skills
 
-### hackernews_team_agent (v1.0.0)
+### hackernews-analysis (v1.0.0)
 
 **Primary Capability:**
-- [Describe what this skill does]
-- [Add key features]
+- Aggregates and analyzes HackerNews stories using a multi-agent team
+- Coordinates HackerNews API, article reading, and web search
 
 **Features:**
-- [Feature 1]
-- [Feature 2]
-- [Feature 3]
+- Real-time HackerNews top stories retrieval
+- Full article content extraction via Newspaper4k
+- Web search enrichment via DuckDuckGo
+- Structured output with Article model (title, summary, reference_links)
 
 **Best Used For:**
-- [Use case 1]
-- [Use case 2]
-- [Use case 3]
+- News aggregation and curation
+- Trend analysis and monitoring
+- Automated newsletter generation
+- Content research and summarization
 
 **Not Suitable For:**
-- [Anti-pattern 1]
-- [Anti-pattern 2]
+- Real-time chat or conversation
+- Non-HackerNews content analysis
 
 **Performance:**
-- Average processing time: ~[X] seconds
-- Max concurrent requests: [N]
-- Memory per request: [X]MB
+- Average processing time: ~10-30 seconds (depends on story count)
+- Max concurrent requests: 10
+- Memory per request: 256MB
 
 ---
 
@@ -289,9 +292,9 @@ uv run pre-commit run -a
 Contributions are welcome! Please follow these steps:
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature` 
-3. Commit your changes: `git commit -m 'Add amazing feature'` 
-4. Push to the branch: `git push origin feature/amazing-feature` 
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
@@ -340,4 +343,3 @@ uvx cookiecutter https://github.com/getbindu/create-bindu-agent.git
   <a href="https://discord.gg/3w5zuYUuwt">💬 Join Discord</a> •
   <a href="https://bindus.directory">🌐 Agent Directory</a>
 </p>
-
