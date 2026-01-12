@@ -1,0 +1,122 @@
+[project]
+name = "hackernews-team-agent"
+version = "0.0.1"
+description = "A multi-agent system that aggregates, curates, and analyzes trending HackerNews stories by coordinating specialized agents to fetch top posts, read full articles, enrich with web research, and produce structured summaries with links. Ideal for news aggregation platforms, trend analysis, content curation, and automated newsletters. Powered by real-time API data, web search, and article extraction."
+authors = [{ name = "raahul", email = "raahul@getbindu.com" }]
+readme = "README.md"
+keywords = ['python']
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "bindu==2026.1.12",
+    "agno>=2.2.0",
+    "fastmcp>=2.11.0",
+    
+    "requests>=2.31.0",
+    "pyperclip>=1.8.0",
+    "rich>=13.0.0",
+    "openai>=2.11.0",
+    "sqlalchemy>=2.0.45",
+    "mem0ai>=1.0.1",
+    "ddgs>=9.9.3",
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+Homepage = "https://raahulrahl.github.io/hackernews-team-agent/"
+Repository = "https://github.com/raahulrahl/hackernews-team-agent"
+Documentation = "https://raahulrahl.github.io/hackernews-team-agent/"
+
+[dependency-groups]
+dev = [
+    "pytest>=7.2.0",
+    "pytest-asyncio>=0.23.0",
+    "pre-commit>=2.20.0",
+    "tox-uv>=1.11.3",
+    "ty>=0.0.1a16",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.11.5",
+    "mkdocs>=1.4.2",
+    "mkdocs-material>=8.5.10",
+    "mkdocstrings[python]>=0.26.1",
+    "types-requests>=2.31.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hackernews_team_agent"]
+
+[tool.ty.environment]
+python = "./.venv"
+python-version = "3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+fix = true
+
+[tool.ruff.lint]
+select = [
+    # flake8-2020
+    "YTT",
+    # flake8-bandit
+    "S",
+    # flake8-bugbear
+    "B",
+    # flake8-builtins
+    "A",
+    # flake8-comprehensions
+    "C4",
+    # flake8-debugger
+    "T10",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+    # mccabe
+    "C90",
+    # pycodestyle
+    "E", "W",
+    # pyflakes
+    "F",
+    # pygrep-hooks
+    "PGH",
+    # pyupgrade
+    "UP",
+    # ruff
+    "RUF",
+    # tryceratops
+    "TRY",
+]
+ignore = [
+    # LineTooLong
+    "E501",
+    # DoNotAssignLambda
+    "E731",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.ruff.format]
+preview = true
+
+[tool.coverage.report]
+skip_empty = true
+
+[tool.coverage.run]
+branch = true
+source = ["hackernews_team_agent"]

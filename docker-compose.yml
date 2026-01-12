@@ -1,0 +1,27 @@
+services:
+  hackernews_team_agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hackernews_team_agent
+    ports:
+      - "3773:3773"
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      
+
+    env_file:
+      - .env
+    volumes:
+      - ./hackernews_team_agent:/app/hackernews_team_agent
+      - ./agent_config.json:/app/agent_config.json
+    restart: unless-stopped
+    networks:
+      - hackernews_team_agent-network
+    
+
+networks:
+  hackernews_team_agent-network:
+    driver: bridge
+
+

@@ -1,0 +1,52 @@
+site_name: hackernews-team-agent
+repo_url: https://github.com/raahulrahl/hackernews-team-agent
+site_url: https://raahulrahl.github.io/hackernews-team-agent
+site_description: A multi-agent system that aggregates, curates, and analyzes trending HackerNews stories by coordinating specialized agents to fetch top posts, read full articles, enrich with web research, and produce structured summaries with links. Ideal for news aggregation platforms, trend analysis, content curation, and automated newsletters. Powered by real-time API data, web search, and article extraction.
+site_author: raahul
+edit_uri: edit/main/docs/
+repo_name: raahulrahl/hackernews-team-agent
+copyright: Maintained by <a href="https://raahulrahl.com">raahulrahl</a>.
+
+nav:
+  - Home: index.md
+  - Modules: modules.md
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: ["src/hackernews_team_agent"]
+theme:
+  name: material
+  feature:
+    tabs: true
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: white
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/raahulrahl/hackernews-team-agent
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/hackernews-team-agent
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
