@@ -173,6 +173,7 @@ documentation:
     Environment variables:
     OPENROUTER_API_KEY=<your-key>
     MEM0_API_KEY=<your-key>
+    EXA_API_KEY=<your-key>
 
     Run:
     uv run python -m hackernews_team_agent
