@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/getbindu/create-bindu-agent/refs/heads/main/assets/light.svg" alt="bindu Logo" width="200">
 </p>
 
-<h1 align="center">hackernews-team-agent</h1>
+<h1 align="center">Hackernews Team Agent</h1>
 
 <p align="center">
   <strong>A multi-agent system that aggregates, curates, and analyzes trending HackerNews stories by coordinating specialized agents to fetch top posts, read full articles, enrich with web research, and produce structured summaries with links. Ideal for news aggregation platforms, trend analysis, content curation, and automated newsletters. Powered by real-time API data, web search, and article extraction.</strong>
