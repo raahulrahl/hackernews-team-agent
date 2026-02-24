@@ -15,6 +15,9 @@
   <a href="https://img.shields.io/github/license/raahulrahl/hackernews-team-agent">
     <img src="https://img.shields.io/github/license/raahulrahl/hackernews-team-agent" alt="License">
   </a>
+  <a href="https://www.bindus.directory/agent/49">
+    <img src="https://img.shields.io/badge/bindus.directory-agent%2F49-blue" alt="Bindus Directory">
+  </a>
 </p>
 
 ---
@@ -29,13 +32,15 @@ A multi-agent system that aggregates, curates, and analyzes trending HackerNews 
 - 🌐 Enriches stories with web search research
 - 📊 Produces structured summaries with reference links
 
+-> [Postman Collection link](https://raahul-1409c5b4-717533.postman.co/workspace/getbindu's-Workspace~44eb7cfe-a752-4114-8a1a-631395f07bf1/collection/50606358-17410b1f-7d94-4ba1-8881-530acc3f156a?action=share&creator=50606358)
+
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.12+
 - [uv](https://github.com/astral-sh/uv) package manager
 - API keys for OpenRouter and Mem0 (both have free tiers)
 
@@ -129,12 +134,77 @@ The agent returns structured output with:
 
 The agent exposes a RESTful API when running. Default endpoint: `http://localhost:3773`
 
-### Quick Start
+### Example Request
 
-For complete API documentation, request/response formats, and examples, visit:
+```bash
+curl --location 'https://hackernews-team-agent.bindu-agents.bindus.directory' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <your-token>' \
+--data '{
+  "jsonrpc": "2.0",
+  "method": "message/send",
+  "params": {
+    "message": {
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Summarize the top 5 trending stories on HackerNews"
+        }
+      ],
+      "kind": "message",
+      "messageId": "550e8400-e29b-41d4-a716-446655440038",
+      "contextId": "550e8400-e29b-41d4-a716-446655440038",
+      "taskId": "550e8400-e29b-41d4-a716-446655440078"
+    },
+    "configuration": {
+      "acceptedOutputModes": ["application/json"]
+    }
+  },
+  "id": "550e8400-e29b-41d4-a716-446655440024"
+}'
+```
 
-📚 **[Bindu API Reference - Send Message to Agent](https://docs.getbindu.com/api-reference/all-the-tasks/send-message-to-agent)**
+### Example Response
 
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "550e8400-e29b-41d4-a716-446655440014",
+  "result": {
+    "id": "550e8400-e29b-41d4-a716-446655440078",
+    "context_id": "550e8400-e29b-41d4-a716-446655440038",
+    "kind": "task",
+    "status": {
+      "state": "completed",
+      "timestamp": "2026-02-24T11:04:18.445630+00:00"
+    },
+    "history": [
+      {
+        "kind": "message",
+        "role": "assistant",
+        "parts": [
+          {
+            "kind": "text",
+            "text": "Here's a summary of the current top 5 trending stories on HackerNews:\n\n1. **Terence Tao at 8 Years Old (1984)**\n   - Historical document about mathematical prodigy Terence Tao\n   - Currently trending with 281 points\n\n2. **Firefox 148's New AI Kill Switch Feature**\n   - Browser update introducing user control over AI features\n   - Allows disabling AI functionalities like chatbot prompts\n\n3. **enveil - Security Tool for .env Files**\n   - Tool to protect environment variables from AI coding assistants\n   - Uses AES-256-GCM encryption\n\n4. **Diode - Hardware Building Platform**\n   - Platform for building, programming, and simulating hardware\n\n5. **Distributed Queue in JSON File**\n   - Technical article about implementing distributed queue system"
+          }
+        ]
+      }
+    ],
+    "artifacts": [
+      {
+        "name": "result",
+        "parts": [
+          {
+            "kind": "text",
+            "text": "Markdown formatted summary with numbered list of stories..."
+          }
+        ]
+      }
+    ]
+  }
+}
+```
 
 ### Additional Resources
 

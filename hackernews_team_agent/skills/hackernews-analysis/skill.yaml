@@ -54,7 +54,7 @@ requirements:
     - "pydantic"
     - "bindu"
   system:
-    - "Python 3.10+"
+    - "Python 3.12+"
   min_memory_mb: 256
 
 # Performance Metrics
@@ -91,35 +91,67 @@ documentation:
       - "Low-latency requirements (< 5 seconds)"
 
   input_structure: |
-    Natural language queries about HackerNews stories.
+    JSON-RPC 2.0 message with user query in parts array.
 
     Example:
     {
-      "role": "user",
-      "content": "What are the top AI stories on HackerNews?"
+      "jsonrpc": "2.0",
+      "method": "message/send",
+      "params": {
+        "message": {
+          "role": "user",
+          "parts": [
+            {
+              "kind": "text",
+              "text": "Summarize the top 5 trending stories on HackerNews"
+            }
+          ],
+          "kind": "message",
+          "messageId": "550e8400-e29b-41d4-a716-446655440038",
+          "contextId": "550e8400-e29b-41d4-a716-446655440038",
+          "taskId": "550e8400-e29b-41d4-a716-446655440078"
+        },
+        "configuration": {
+          "acceptedOutputModes": ["application/json"]
+        }
+      },
+      "id": "550e8400-e29b-41d4-a716-446655440024"
     }
 
-    Constraints:
-    - Plain text or JSON format
-    - Query should reference HackerNews or trending topics
-    - No specific parameter structure required
-
   output_format: |
-    Structured Article model with title, summary, and reference links.
+    JSON-RPC 2.0 result with task history and artifacts containing markdown summary.
 
     Success Response:
     {
-      "title": "AI Trends on HackerNews",
-      "summary": "Comprehensive analysis of top stories...",
-      "reference_links": [
-        "https://news.ycombinator.com/item?id=123",
-        "https://example.com/article"
-      ]
-    }
-
-    Error Response:
-    {
-      "error": "Failed to fetch HackerNews stories"
+      "jsonrpc": "2.0",
+      "id": "550e8400-e29b-41d4-a716-446655440014",
+      "result": {
+        "id": "550e8400-e29b-41d4-a716-446655440078",
+        "context_id": "550e8400-e29b-41d4-a716-446655440038",
+        "kind": "task",
+        "status": {
+          "state": "completed",
+          "timestamp": "2026-02-24T11:04:18.445630+00:00"
+        },
+        "history": [
+          {
+            "kind": "message",
+            "role": "user",
+            "parts": [{"kind": "text", "text": "Summarize the top 5 trending stories on HackerNews"}]
+          },
+          {
+            "kind": "message",
+            "role": "assistant",
+            "parts": [{"kind": "text", "text": "Here's a summary of the current top 5 trending stories..."}]
+          }
+        ],
+        "artifacts": [
+          {
+            "name": "result",
+            "parts": [{"kind": "text", "text": "Markdown formatted summary with numbered list of stories"}]
+          }
+        ]
+      }
     }
 
   error_handling:
@@ -130,25 +162,32 @@ documentation:
     - "Rate limits: Automatic retry with exponential backoff"
 
   examples:
-    - title: "Top AI Stories"
+    - title: "Top 5 Trending Stories"
       input:
-        role: "user"
-        content: "What are the top AI stories on HackerNews?"
+        parts:
+          - kind: "text"
+            text: "Summarize the top 5 trending stories on HackerNews"
       output:
-        title: "Top AI Stories on HackerNews"
-        summary: "Analysis of trending AI discussions..."
-        reference_links:
-          - "https://news.ycombinator.com/item?id=123"
+        text: |
+          Here's a summary of the current top 5 trending stories on HackerNews:
 
-    - title: "Trending Stories Summary"
-      input:
-        role: "user"
-        content: "Summarize the top 5 trending stories"
-      output:
-        title: "Top 5 HackerNews Stories"
-        summary: "Comprehensive summary of trending topics..."
-        reference_links:
-          - "https://news.ycombinator.com/item?id=456"
+          1. **Terence Tao at 8 Years Old (1984)**
+             - Historical document about mathematical prodigy Terence Tao
+             - Currently trending with 281 points
+
+          2. **Firefox 148's New AI Kill Switch Feature**
+             - Browser update introducing user control over AI features
+             - Allows disabling AI functionalities like chatbot prompts
+
+          3. **enveil - Security Tool for .env Files**
+             - Tool to protect environment variables from AI coding assistants
+             - Uses AES-256-GCM encryption
+
+          4. **Diode - Hardware Building Platform**
+             - Platform for building, programming, and simulating hardware
+
+          5. **Distributed Queue in JSON File**
+             - Technical article about implementing distributed queue system
 
   best_practices:
     for_developers:
