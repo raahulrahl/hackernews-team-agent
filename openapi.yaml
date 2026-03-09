@@ -11,7 +11,7 @@ info:
     management, context management, DID resolution, and payment processing.
   version: 1.0.0
 servers:
-  - url: https://hackernews-team-agent.bindus.directory
+  - url: https://hackernews-team-agent.bindu-agents.bindus.directory
     description: Production server
 security:
   - bearerAuth: []
