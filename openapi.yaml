@@ -35,6 +35,8 @@ info:
 
     This aligns with the A2A Protocol's "Task-only Agent" pattern where **all responses are Task objects**,
     enabling orchestration at scale.
+    
+    **Learn more:** [Task-First Pattern Documentation](https://docs.getbindu.com/bindu/concepts/task-first-pattern)
 
     ## Getting Started
 
@@ -389,148 +391,6 @@ paths:
               },
               "id": "550e8400-e29b-41d4-a716-446655440024"
             }'
-        - lang: 'curl'
-          label: 'Step 2: Poll Task Status'
-          source: |
-            curl --location 'https://hackernews-team-agent.bindu-agents.bindus.directory' \
-            --header 'Content-Type: application/json' \
-            --header 'Authorization: Bearer YOUR_TOKEN_HERE' \
-            --data '{
-              "jsonrpc": "2.0",
-              "method": "tasks/get",
-              "params": {
-                "taskId": "550e8400-e29b-41d4-a716-446655440078"
-              },
-              "id": "550e8400-e29b-41d4-a716-446655440014"
-            }'
-        - lang: 'python'
-          label: 'Python Example'
-          source: |
-            import requests
-            import time
-            import uuid
-
-            BASE_URL = "https://hackernews-team-agent.bindu-agents.bindus.directory"
-            TOKEN = "YOUR_TOKEN_HERE"
-            
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {TOKEN}"
-            }
-            
-            # Step 1: Send message
-            task_id = str(uuid.uuid4())
-            message_payload = {
-                "jsonrpc": "2.0",
-                "method": "message/send",
-                "params": {
-                    "message": {
-                        "role": "user",
-                        "parts": [{"kind": "text", "text": "Summarize top 5 HackerNews stories"}],
-                        "kind": "message",
-                        "messageId": str(uuid.uuid4()),
-                        "contextId": str(uuid.uuid4()),
-                        "taskId": task_id
-                    }
-                },
-                "id": str(uuid.uuid4())
-            }
-            
-            response = requests.post(BASE_URL, json=message_payload, headers=headers)
-            print(f"Task created: {response.json()}")
-            
-            # Step 2: Poll for completion
-            while True:
-                poll_payload = {
-                    "jsonrpc": "2.0",
-                    "method": "tasks/get",
-                    "params": {"taskId": task_id},
-                    "id": str(uuid.uuid4())
-                }
-                
-                response = requests.post(BASE_URL, json=poll_payload, headers=headers)
-                result = response.json()["result"]
-                state = result["status"]["state"]
-                
-                print(f"Task state: {state}")
-                
-                if state == "completed":
-                    print("Results:", result["artifacts"])
-                    break
-                elif state == "failed":
-                    print("Task failed")
-                    break
-                
-                time.sleep(5)  # Wait 5 seconds before polling again
-        - lang: 'javascript'
-          label: 'JavaScript Example'
-          source: |
-            const BASE_URL = "https://hackernews-team-agent.bindu-agents.bindus.directory";
-            const TOKEN = "YOUR_TOKEN_HERE";
-            
-            async function analyzeHackerNews() {
-              const taskId = crypto.randomUUID();
-              
-              // Step 1: Send message
-              const messageResponse = await fetch(BASE_URL, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${TOKEN}`
-                },
-                body: JSON.stringify({
-                  jsonrpc: "2.0",
-                  method: "message/send",
-                  params: {
-                    message: {
-                      role: "user",
-                      parts: [{kind: "text", text: "Summarize top 5 HackerNews stories"}],
-                      kind: "message",
-                      messageId: crypto.randomUUID(),
-                      contextId: crypto.randomUUID(),
-                      taskId: taskId
-                    }
-                  },
-                  id: crypto.randomUUID()
-                })
-              });
-              
-              console.log("Task created:", await messageResponse.json());
-              
-              // Step 2: Poll for completion
-              while (true) {
-                const pollResponse = await fetch(BASE_URL, {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${TOKEN}`
-                  },
-                  body: JSON.stringify({
-                    jsonrpc: "2.0",
-                    method: "tasks/get",
-                    params: {taskId: taskId},
-                    id: crypto.randomUUID()
-                  })
-                });
-                
-                const result = await pollResponse.json();
-                const state = result.result.status.state;
-                
-                console.log("Task state:", state);
-                
-                if (state === "completed") {
-                  console.log("Results:", result.result.artifacts);
-                  break;
-                } else if (state === "failed") {
-                  console.log("Task failed");
-                  break;
-                }
-                
-                await new Promise(resolve => setTimeout(resolve, 5000));
-              }
-            }
-            
-            analyzeHackerNews();
   '/.well-known/agent.json':
     get:
       summary: Get Agent Card
