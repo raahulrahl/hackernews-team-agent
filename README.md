@@ -32,8 +32,6 @@ A multi-agent system that aggregates, curates, and analyzes trending HackerNews 
 - 🌐 Enriches stories with web search research
 - 📊 Produces structured summaries with reference links
 
--> [Postman Collection link](https://raahul-1409c5b4-717533.postman.co/workspace/getbindu's-Workspace~44eb7cfe-a752-4114-8a1a-631395f07bf1/collection/50606358-17410b1f-7d94-4ba1-8881-530acc3f156a?action=share&creator=50606358)
-
 ---
 
 ## 🚀 Quick Start

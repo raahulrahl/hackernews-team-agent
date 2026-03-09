@@ -1,0 +1,1309 @@
+openapi: 3.1.0
+info:
+  title: HackerNews Team Agent API
+  description: |
+    A multi-agent system that aggregates, curates, and analyzes trending HackerNews stories
+    by coordinating specialized agents to fetch top posts, read full articles, enrich with
+    web research, and produce structured summaries with links. Ideal for news aggregation
+    platforms, trend analysis, content curation, and automated newsletters.
+
+    Implements the A2A Protocol with JSON-RPC 2.0 methods for agent communication, task
+    management, context management, DID resolution, and payment processing.
+  version: 1.0.0
+servers:
+  - url: https://hackernews-team-agent.bindus.directory
+    description: Production server
+security:
+  - bearerAuth: []
+paths:
+  /:
+    post:
+      summary: JSON-RPC 2.0 endpoint
+      description: All JSON-RPC methods are sent as POST requests to this endpoint.
+      operationId: jsonRpc
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JsonRpcRequest'
+      responses:
+        '200':
+          description: Successful JSON-RPC response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonRpcResponse'
+        '400':
+          description: Invalid JSON-RPC request
+        '401':
+          description: Unauthorized - missing or invalid bearer token
+      security:
+        - bearerAuth: []
+  '/.well-known/agent.json':
+    get:
+      summary: Get Agent Card
+      description: Returns the agent's metadata card following the A2A Protocol specification.
+      operationId: getAgentCard
+      responses:
+        '200':
+          description: Agent card retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentCard'
+      security: []
+  '/did/resolve':
+    post:
+      summary: Resolve DID
+      description: Resolves a Decentralized Identifier (DID) to its W3C-compliant DID document.
+      operationId: resolveDid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - did
+              properties:
+                did:
+                  type: string
+                  description: The DID to resolve
+                  example: 'did:bindu:raahul_at_getbindu_com:hackernews-team-agent:9057e1c50be8442bb0099e34b5525b06'
+      responses:
+        '200':
+          description: DID document resolved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DidDocument'
+      security: []
+  '/agent/skills':
+    get:
+      summary: List Agent Skills
+      description: Returns a list of all skills supported by the agent.
+      operationId: listSkills
+      responses:
+        '200':
+          description: List of skills
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  skills:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SkillSummary'
+                  total:
+                    type: integer
+                    example: 1
+      security: []
+  '/agent/skills/{skillId}':
+    get:
+      summary: Get Skill Details
+      description: Returns detailed information about a specific skill.
+      operationId: getSkillDetails
+      parameters:
+        - name: skillId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The skill identifier (e.g., 'hackernews-analysis-v1')
+      responses:
+        '200':
+          description: Skill details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillDetail'
+        '404':
+          description: Skill not found
+      security: []
+  '/agent/skills/{skillId}/documentation':
+    get:
+      summary: Get Skill Documentation
+      description: Returns human-readable documentation for a specific skill in Markdown or YAML format.
+      operationId: getSkillDocumentation
+      parameters:
+        - name: skillId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The skill identifier
+      responses:
+        '200':
+          description: Skill documentation
+          content:
+            application/yaml:
+              schema:
+                type: string
+                description: YAML formatted documentation
+            text/markdown:
+              schema:
+                type: string
+                description: Markdown formatted documentation
+        '404':
+          description: Skill not found
+      security: []
+  '/agent/negotiation':
+    post:
+      summary: Assess Task Capability
+      description: Assess agent's capability to handle a task for negotiation.
+      operationId: assessTaskCapability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NegotiationRequest'
+      responses:
+        '200':
+          description: Capability assessment result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NegotiationResponse'
+      security: []
+  '/api/start-payment-session':
+    post:
+      summary: Start Payment Session
+      description: Initiates a payment session for x402 protocol.
+      operationId: startPaymentSession
+      responses:
+        '200':
+          description: Payment session started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentSession'
+      security:
+        - bearerAuth: []
+  '/api/payment-status/{sessionId}':
+    get:
+      summary: Get Payment Status
+      description: Retrieves the status of a payment session.
+      operationId: getPaymentStatus
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The payment session identifier
+        - name: wait
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Set to 'true' to wait for completion (up to 5 minutes)
+      responses:
+        '200':
+          description: Payment status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentStatus'
+      security:
+        - bearerAuth: []
+  '/payment-capture':
+    get:
+      summary: Payment Capture Page
+      description: Browser page to capture payment. Shows paywall UI and captures payment token.
+      operationId: paymentCapture
+      parameters:
+        - name: session_id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The payment session ID
+      responses:
+        '200':
+          description: Payment capture page (HTML)
+          content:
+            text/html:
+              schema:
+                type: string
+      security: []
+  /health:
+    get:
+      summary: Health Check
+      description: Health check endpoint for service monitoring.
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service health information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+      security: []
+  /metrics:
+    get:
+      summary: Prometheus Metrics
+      description: Prometheus metrics endpoint for scraping.
+      operationId: getMetrics
+      responses:
+        '200':
+          description: Metrics in Prometheus text format
+          content:
+            text/plain:
+              schema:
+                type: string
+      security: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer token authentication. Include `Bearer <token>` in the Authorization header.
+  schemas:
+    # ----- JSON-RPC -----
+    JsonRpcRequest:
+      type: object
+      required:
+        - jsonrpc
+        - method
+        - id
+      properties:
+        jsonrpc:
+          type: string
+          enum: ['2.0']
+        method:
+          type: string
+          enum:
+            - message/send
+            - tasks/get
+            - tasks/list
+            - tasks/cancel
+            - tasks/feedback
+            - contexts/list
+            - contexts/clear
+        params:
+          oneOf:
+            - $ref: '#/components/schemas/MessageSendParams'
+            - $ref: '#/components/schemas/TasksGetParams'
+            - $ref: '#/components/schemas/TasksListParams'
+            - $ref: '#/components/schemas/TasksCancelParams'
+            - $ref: '#/components/schemas/TasksFeedbackParams'
+            - $ref: '#/components/schemas/ContextsListParams'
+            - $ref: '#/components/schemas/ContextsClearParams'
+          discriminator:
+            propertyName: method
+            mapping:
+              message/send: '#/components/schemas/MessageSendParams'
+              tasks/get: '#/components/schemas/TasksGetParams'
+              tasks/list: '#/components/schemas/TasksListParams'
+              tasks/cancel: '#/components/schemas/TasksCancelParams'
+              tasks/feedback: '#/components/schemas/TasksFeedbackParams'
+              contexts/list: '#/components/schemas/ContextsListParams'
+              contexts/clear: '#/components/schemas/ContextsClearParams'
+        id:
+          type: string
+          format: uuid
+          example: '550e8400-e29b-41d4-a716-446655440024'
+    JsonRpcResponse:
+      type: object
+      properties:
+        jsonrpc:
+          type: string
+          enum: ['2.0']
+        id:
+          type: string
+          format: uuid
+        result:
+          oneOf:
+            - $ref: '#/components/schemas/MessageSendResult'
+            - $ref: '#/components/schemas/TasksGetResult'
+            - $ref: '#/components/schemas/TasksListResult'
+            - $ref: '#/components/schemas/TasksCancelResult'
+            - $ref: '#/components/schemas/TasksFeedbackResult'
+            - $ref: '#/components/schemas/ContextsListResult'
+            - $ref: '#/components/schemas/ContextsClearResult'
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+            message:
+              type: string
+      oneOf:
+        - required: [result]
+        - required: [error]
+    # MessageSend
+    MessageSendParams:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          $ref: '#/components/schemas/UserMessage'
+        configuration:
+          type: object
+          properties:
+            acceptedOutputModes:
+              type: array
+              items:
+                type: string
+                enum: ['application/json', 'text/plain']
+        skillId:
+          type: string
+          description: Optional skill ID to invoke
+    UserMessage:
+      type: object
+      required:
+        - role
+        - parts
+        - kind
+        - messageId
+        - contextId
+        - taskId
+      properties:
+        role:
+          type: string
+          enum: ['user']
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessagePart'
+        kind:
+          type: string
+          enum: ['message']
+        messageId:
+          type: string
+          format: uuid
+        contextId:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        referenceTaskIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        metadata:
+          type: object
+          description: Additional metadata, e.g., for payment
+    MessagePart:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum: ['text']
+        text:
+          type: string
+    MessageSendResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        context_id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: ['task']
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryMessage'
+        artifacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Artifact'
+        metadata:
+          type: object
+    TaskStatus:
+      type: object
+      required:
+        - state
+        - timestamp
+      properties:
+        state:
+          type: string
+          enum: [submitted, input-required, completed, canceled, failed]
+        timestamp:
+          type: string
+          format: date-time
+    HistoryMessage:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: ['message']
+        role:
+          type: string
+          enum: [user, assistant]
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessagePart'
+        task_id:
+          type: string
+          format: uuid
+        context_id:
+          type: string
+          format: uuid
+        message_id:
+          type: string
+          format: uuid
+        reference_task_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+    Artifact:
+      type: object
+      properties:
+        name:
+          type: string
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessagePart'
+        artifact_id:
+          type: string
+          format: uuid
+        metadata:
+          type: object
+    # TasksGet
+    TasksGetParams:
+      type: object
+      required:
+        - taskId
+      properties:
+        taskId:
+          type: string
+          format: uuid
+    TasksGetResult:
+      $ref: '#/components/schemas/Task'
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        context_id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: ['task']
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryMessage'
+        artifacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Artifact'
+        metadata:
+          type: object
+    # TasksList
+    TasksListParams:
+      type: object
+      properties:
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        offset:
+          type: integer
+          minimum: 0
+    TasksListResult:
+      type: array
+      items:
+        $ref: '#/components/schemas/Task'
+    # TasksCancel
+    TasksCancelParams:
+      type: object
+      required:
+        - taskId
+      properties:
+        taskId:
+          type: string
+          format: uuid
+    TasksCancelResult:
+      $ref: '#/components/schemas/Task'
+    # TasksFeedback
+    TasksFeedbackParams:
+      type: object
+      required:
+        - taskId
+        - feedback
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        feedback:
+          type: string
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        metadata:
+          type: object
+    TasksFeedbackResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+    # ContextsList
+    ContextsListParams:
+      type: object
+      properties:
+        length:
+          type: integer
+          minimum: 1
+          maximum: 100
+    ContextsListResult:
+      type: array
+      items:
+        type: object
+        description: Conversation context object
+    # ContextsClear
+    ContextsClearParams:
+      type: object
+      required:
+        - contextId
+      properties:
+        contextId:
+          type: string
+          format: uuid
+    ContextsClearResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+
+    # ----- Agent Card -----
+    AgentCard:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+        version:
+          type: string
+        protocolVersion:
+          type: string
+        skills:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              documentationPath:
+                type: string
+        capabilities:
+          type: object
+          properties:
+            extensions:
+              type: array
+              items:
+                type: object
+            pushNotifications:
+              type: boolean
+            streaming:
+              type: boolean
+        kind:
+          type: string
+        numHistorySessions:
+          type: integer
+        extraData:
+          type: object
+        debugMode:
+          type: boolean
+        debugLevel:
+          type: integer
+        monitoring:
+          type: boolean
+        telemetry:
+          type: boolean
+        agentTrust:
+          type: string
+        defaultInputModes:
+          type: array
+          items:
+            type: string
+        defaultOutputModes:
+          type: array
+          items:
+            type: string
+      example:
+        id: '9057e1c5-0be8-442b-b009-9e34b5525b06'
+        name: 'hackernews-team-agent'
+        description: 'A multi-agent system that aggregates, curates, and analyzes trending HackerNews stories by coordinating specialized agents to fetch top posts, read full articles, enrich with web research, and produce structured summaries with links. Ideal for news aggregation platforms, trend analysis, content curation, and automated newsletters. Powered by real-time API data, web search, and article extraction.'
+        url: 'http://localhost'
+        version: '1.0.0'
+        protocolVersion: '1.0.0'
+        skills:
+          - id: 'hackernews-analysis-v1'
+            name: 'hackernews-analysis'
+            documentationPath: 'http://localhost/agent/skills/hackernews-analysis-v1'
+        capabilities:
+          extensions:
+            - uri: 'did:bindu:raahul_at_getbindu_com:hackernews-team-agent:9057e1c50be8442bb0099e34b5525b06'
+              description: 'DID-based identity for hackernews-team-agent'
+              required: false
+              params:
+                author: 'raahul@getbindu.com'
+                agent_name: 'hackernews-team-agent'
+                agent_id: '9057e1c50be8442bb0099e34b5525b06'
+          pushNotifications: false
+          streaming: false
+        kind: 'agent'
+        numHistorySessions: 5
+        extraData:
+          created: 1771960617
+          server_info: 'bindu Agent Server'
+        debugMode: true
+        debugLevel: 2
+        monitoring: false
+        telemetry: true
+        agentTrust: 'low'
+        defaultInputModes: ['text/plain', 'application/json']
+        defaultOutputModes: ['text/plain', 'application/json']
+
+    # ----- DID Document -----
+    DidDocument:
+      type: object
+      properties:
+        '@context':
+          type: array
+          items:
+            type: string
+        id:
+          type: string
+        created:
+          type: string
+          format: date-time
+        authentication:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              type:
+                type: string
+              controller:
+                type: string
+              publicKeyBase58:
+                type: string
+      example:
+        '@context':
+          - 'https://www.w3.org/ns/did/v1'
+          - 'https://getbindu.com/ns/v1'
+        id: 'did:bindu:raahul_at_getbindu_com:hackernews-team-agent:9057e1c50be8442bb0099e34b5525b06'
+        created: '2026-02-24T19:15:13.581497+00:00'
+        authentication:
+          - id: 'did:bindu:raahul_at_getbindu_com:hackernews-team-agent:9057e1c50be8442bb0099e34b5525b06#key-1'
+            type: 'Ed25519VerificationKey2020'
+            controller: 'did:bindu:raahul_at_getbindu_com:hackernews-team-agent:9057e1c50be8442bb0099e34b5525b06'
+            publicKeyBase58: 'G5GArDaptfioimLdNbMgCKCvxndXhpcS6VUkRFEds12B'
+
+    # ----- Skills -----
+    SkillSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        input_modes:
+          type: array
+          items:
+            type: string
+        output_modes:
+          type: array
+          items:
+            type: string
+        examples:
+          type: array
+          items:
+            type: string
+        documentation_path:
+          type: string
+      example:
+        id: 'hackernews-analysis-v1'
+        name: 'hackernews-analysis'
+        description: |-
+          Multi-agent system that aggregates and analyzes HackerNews stories.
+          Coordinates specialized agents to fetch top posts, read articles, and enrich with web research.
+        version: '1.0.0'
+        tags: ['hackernews-analysis', 'news-aggregation', 'content-curation', 'web-research']
+        input_modes: ['text/plain', 'application/json']
+        output_modes: ['text/plain', 'application/json']
+        examples:
+          - 'What are the top AI stories on HackerNews today?'
+          - 'Summarize the top 5 trending stories on HackerNews'
+          - 'Get the latest HackerNews posts about machine learning'
+        documentation_path: 'hackernews_team_agent/skills/hackernews-analysis/skill.yaml'
+
+    SkillDetail:
+      allOf:
+        - $ref: '#/components/schemas/SkillSummary'
+        - type: object
+          properties:
+            author:
+              type: string
+            capabilities_detail:
+              type: object
+              properties:
+                primary_capability:
+                  type: object
+                  properties:
+                    supported:
+                      type: boolean
+                    description:
+                      type: string
+                    features:
+                      type: array
+                      items:
+                        type: string
+                    limitations:
+                      type: string
+                secondary_capability:
+                  type: object
+                  properties:
+                    supported:
+                      type: boolean
+                    planned_version:
+                      type: string
+                    description:
+                      type: string
+            requirements:
+              type: object
+              properties:
+                packages:
+                  type: array
+                  items:
+                    type: string
+                system:
+                  type: array
+                  items:
+                    type: string
+                min_memory_mb:
+                  type: integer
+            performance:
+              type: object
+              properties:
+                avg_processing_time_ms:
+                  type: integer
+                max_concurrent_requests:
+                  type: integer
+                memory_per_request_mb:
+                  type: integer
+                scalability:
+                  type: string
+            allowed_tools:
+              type: array
+              items:
+                type: string
+            documentation:
+              type: object
+              properties:
+                overview:
+                  type: string
+                use_cases:
+                  type: object
+                  properties:
+                    when_to_use:
+                      type: array
+                      items:
+                        type: string
+                    when_not_to_use:
+                      type: array
+                      items:
+                        type: string
+                input_structure:
+                  type: string
+                output_format:
+                  type: string
+                error_handling:
+                  type: array
+                  items:
+                    type: string
+                examples:
+                  type: array
+                  items:
+                    type: object
+                best_practices:
+                  type: object
+                installation:
+                  type: string
+                versioning:
+                  type: array
+                  items:
+                    type: object
+            assessment:
+              type: object
+              properties:
+                keywords:
+                  type: array
+                  items:
+                    type: string
+                specializations:
+                  type: array
+                  items:
+                    type: object
+                anti_patterns:
+                  type: array
+                  items:
+                    type: string
+                complexity_indicators:
+                  type: object
+            has_documentation:
+              type: boolean
+      example:
+        id: 'hackernews-analysis-v1'
+        name: 'hackernews-analysis'
+        description: |-
+          Multi-agent system that aggregates and analyzes HackerNews stories.
+          Coordinates specialized agents to fetch top posts, read articles, and enrich with web research.
+        tags: ['hackernews-analysis', 'news-aggregation', 'content-curation', 'web-research']
+        input_modes: ['text/plain', 'application/json']
+        output_modes: ['text/plain', 'application/json']
+        version: '1.0.0'
+        author: 'raahul@getbindu.com'
+        examples:
+          - 'What are the top AI stories on HackerNews today?'
+          - 'Summarize the top 5 trending stories on HackerNews'
+          - 'Get the latest HackerNews posts about machine learning'
+        capabilities_detail:
+          primary_capability:
+            supported: true
+            description: 'Aggregates and analyzes HackerNews stories using multi-agent coordination'
+            features:
+              - 'Real-time HackerNews API integration'
+              - 'Full article content extraction'
+              - 'Web search enrichment'
+              - 'Structured output with Article model'
+            limitations: 'Focused on HackerNews content only, processing time depends on story count'
+          secondary_capability:
+            supported: false
+            planned_version: '2.0.0'
+            description: 'Historical trend analysis and sentiment tracking'
+        requirements:
+          packages:
+            - 'agno'
+            - 'newspaper4k'
+            - 'pydantic'
+            - 'bindu'
+          system:
+            - 'Python 3.12+'
+          min_memory_mb: 256
+        performance:
+          avg_processing_time_ms: 15000
+          max_concurrent_requests: 10
+          memory_per_request_mb: 256
+          scalability: 'horizontal'
+        allowed_tools:
+          - 'Read'
+          - 'Write'
+          - 'Execute'
+        documentation:
+          overview: |-
+            Multi-agent team that coordinates HackerNews story analysis.
+            Uses three specialized agents: HackerNews Researcher (fetches top stories),
+            Article Reader (extracts full content), and Web Searcher (enriches with research).
+            Built on Agno framework with OpenRouter models and structured output.
+          use_cases:
+            when_to_use:
+              - 'News aggregation and curation platforms'
+              - 'Trend analysis and monitoring'
+              - 'Automated newsletter generation'
+              - 'Content research and summarization'
+            when_not_to_use:
+              - 'Real-time chat or conversational interfaces'
+              - 'Non-HackerNews content analysis'
+              - 'Low-latency requirements (< 5 seconds)'
+          input_structure: |
+            JSON-RPC 2.0 message with user query in parts array.
+
+            Example:
+            {
+              "jsonrpc": "2.0",
+              "method": "message/send",
+              "params": {
+                "message": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "kind": "text",
+                      "text": "Summarize the top 5 trending stories on HackerNews"
+                    }
+                  ],
+                  "kind": "message",
+                  "messageId": "550e8400-e29b-41d4-a716-446655440038",
+                  "contextId": "550e8400-e29b-41d4-a716-446655440038",
+                  "taskId": "550e8400-e29b-41d4-a716-446655440078"
+                },
+                "configuration": {
+                  "acceptedOutputModes": ["application/json"]
+                }
+              },
+              "id": "550e8400-e29b-41d4-a716-446655440024"
+            }
+          output_format: |
+            JSON-RPC 2.0 result with task history and artifacts containing markdown summary.
+
+            Success Response:
+            {
+              "jsonrpc": "2.0",
+              "id": "550e8400-e29b-41d4-a716-446655440014",
+              "result": {
+                "id": "550e8400-e29b-41d4-a716-446655440078",
+                "context_id": "550e8400-e29b-41d4-a716-446655440038",
+                "kind": "task",
+                "status": {
+                  "state": "completed",
+                  "timestamp": "2026-02-24T11:04:18.445630+00:00"
+                },
+                "history": [
+                  {
+                    "kind": "message",
+                    "role": "user",
+                    "parts": [{"kind": "text", "text": "Summarize the top 5 trending stories on HackerNews"}]
+                  },
+                  {
+                    "kind": "message",
+                    "role": "assistant",
+                    "parts": [{"kind": "text", "text": "Here's a summary of the current top 5 trending stories..."}]
+                  }
+                ],
+                "artifacts": [
+                  {
+                    "name": "result",
+                    "parts": [{"kind": "text", "text": "Markdown formatted summary with numbered list of stories"}]
+                  }
+                ]
+              }
+            }
+          error_handling:
+            - 'API failures: Graceful degradation with partial results'
+            - 'Article extraction errors: Skip unavailable content'
+            - 'Timeout: 30-second limit per agent operation'
+            - 'Invalid queries: Return error message with guidance'
+            - 'Rate limits: Automatic retry with exponential backoff'
+          examples:
+            - title: 'Top 5 Trending Stories'
+              input:
+                parts:
+                  - kind: 'text'
+                    text: 'Summarize the top 5 trending stories on HackerNews'
+              output:
+                text: |-
+                  Here's a summary of the current top 5 trending stories on HackerNews:
+
+                  1. **Terence Tao at 8 Years Old (1984)**
+                     - Historical document about mathematical prodigy Terence Tao
+                     - Currently trending with 281 points
+
+                  2. **Firefox 148's New AI Kill Switch Feature**
+                     - Browser update introducing user control over AI features
+                     - Allows disabling AI functionalities like chatbot prompts
+
+                  3. **enveil - Security Tool for .env Files**
+                     - Tool to protect environment variables from AI coding assistants
+                     - Uses AES-256-GCM encryption
+
+                  4. **Diode - Hardware Building Platform**
+                     - Platform for building, programming, and simulating hardware
+
+                  5. **Distributed Queue in JSON File**
+                     - Technical article about implementing distributed queue system
+          best_practices:
+            for_developers:
+              - 'Use async/await for all agent operations'
+              - 'Implement graceful degradation for partial failures'
+              - 'Cache API responses to reduce latency'
+              - 'Test with various query types and edge cases'
+            for_orchestrators:
+              - 'Route HackerNews-related queries to this skill'
+              - 'Chain with content summarization or sentiment analysis skills'
+              - 'Expect 10-30 second processing time per request'
+              - 'Implement retry logic with exponential backoff'
+              - 'Monitor agent response times and API rate limits'
+          installation: |-
+            Install via uv package manager.
+
+            Required packages:
+            uv sync
+
+            Environment variables:
+            OPENROUTER_API_KEY=<your-key>
+            MEM0_API_KEY=<your-key>
+            EXA_API_KEY=<your-key>
+
+            Run:
+            uv run python -m hackernews_team_agent
+          versioning:
+            - version: '1.0.0'
+              date: '2026-01-12'
+              changes: 'Initial release with multi-agent HackerNews analysis'
+            - version: '1.1.0'
+              status: 'planned'
+              changes: 'Add historical trend analysis and sentiment tracking'
+        assessment:
+          keywords:
+            - 'hackernews'
+            - 'news'
+            - 'stories'
+            - 'trending'
+            - 'articles'
+            - 'aggregation'
+          specializations:
+            - domain: 'news-aggregation'
+              confidence_boost: 0.3
+            - domain: 'content-curation'
+              confidence_boost: 0.2
+          anti_patterns:
+            - 'Real-time chat conversations'
+            - 'Non-HackerNews content analysis'
+            - 'Image or video processing'
+          complexity_indicators:
+            simple:
+              - 'Get top HackerNews stories'
+              - 'Fetch latest posts'
+            medium:
+              - 'Summarize top 5 stories with details'
+              - 'Analyze trending topics'
+            complex:
+              - 'Deep analysis with web research enrichment'
+              - 'Multi-topic trend comparison'
+        has_documentation: true
+
+    # ----- Negotiation -----
+    NegotiationRequest:
+      type: object
+      required:
+        - task_summary
+      properties:
+        task_summary:
+          type: string
+          maxLength: 10000
+        task_details:
+          type: string
+        input_mime_types:
+          type: array
+          items:
+            type: string
+        output_mime_types:
+          type: array
+          items:
+            type: string
+        max_latency_ms:
+          type: integer
+        max_cost_amount:
+          type: number
+          format: float
+        required_tools:
+          type: array
+          items:
+            type: string
+        forbidden_tools:
+          type: array
+          items:
+            type: string
+        min_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        weights:
+          type: object
+          properties:
+            skill_match:
+              type: number
+              format: float
+            io_compatibility:
+              type: number
+              format: float
+            performance:
+              type: number
+              format: float
+            load:
+              type: number
+              format: float
+            cost:
+              type: number
+              format: float
+      example:
+        task_summary: 'Answer questions about machine learning concepts'
+        task_details: 'User needs help understanding neural networks and deep learning'
+        input_mime_types: ['text/plain', 'application/json']
+        output_mime_types: ['application/json']
+        max_latency_ms: 5000
+        max_cost_amount: 0.01
+        required_tools: []
+        forbidden_tools: []
+        min_score: 0.5
+        weights:
+          skill_match: 0.55
+          io_compatibility: 0.20
+          performance: 0.15
+          load: 0.05
+          cost: 0.05
+    NegotiationResponse:
+      type: object
+      properties:
+        accepted:
+          type: boolean
+        score:
+          type: number
+          format: float
+        confidence:
+          type: number
+          format: float
+        rejection_reason:
+          type: string
+        queue_depth:
+          type: integer
+        subscores:
+          type: object
+          properties:
+            skill_match:
+              type: number
+              format: float
+            io_compatibility:
+              type: number
+              format: float
+            load:
+              type: number
+              format: float
+            cost:
+              type: number
+              format: float
+      example:
+        accepted: false
+        score: 0.3
+        confidence: 0.8
+        rejection_reason: 'score_below_threshold'
+        queue_depth: 0
+        subscores:
+          skill_match: 0
+          io_compatibility: 1
+          load: 1
+          cost: 1
+
+    # ----- Payment -----
+    PaymentSession:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        requirements:
+          type: object
+        url:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+    PaymentStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, completed, failed]
+        paymentToken:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+
+    # ----- Health -----
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, error]
+        ready:
+          type: boolean
+        uptime_seconds:
+          type: number
+        version:
+          type: string
+        health:
+          type: string
+        runtime:
+          type: object
+          properties:
+            storage_backend:
+              type: string
+            scheduler_backend:
+              type: string
+            task_manager_running:
+              type: boolean
+            strict_ready:
+              type: boolean
+        application:
+          type: object
+          properties:
+            penguin_id:
+              type: string
+            agent_did:
+              type: string
+        system:
+          type: object
+          properties:
+            python_version:
+              type: string
+            platform:
+              type: string
+            platform_release:
+              type: string
+            environment:
+              type: string
+      example:
+        status: 'ok'
+        ready: true
+        uptime_seconds: 31.43
+        version: '2026.9.2.2'
+        health: 'healthy'
+        runtime:
+          storage_backend: 'PostgresStorage'
+          scheduler_backend: 'RedisScheduler'
+          task_manager_running: true
+          strict_ready: true
+        application:
+          penguin_id: '9057e1c50be8442bb0099e34b5525b06'
+          agent_did: 'did:bindu:raahul_at_getbindu_com:hackernews-team-agent:9057e1c50be8442bb0099e34b5525b06'
+        system:
+          python_version: '3.12.12'
+          platform: 'Linux'
+          platform_release: '6.8.0-90-generic'
+          environment: 'development'
