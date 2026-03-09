@@ -9,6 +9,154 @@ info:
 
     Implements the A2A Protocol with JSON-RPC 2.0 methods for agent communication, task
     management, context management, DID resolution, and payment processing.
+
+    ## Why Task-First Architecture?
+
+    This API follows Bindu's **Task-First Agent Pattern** - every interaction creates a trackable task.
+    This isn't just about async operations; it enables:
+
+    **Multi-Agent Orchestration**
+    - Track work across multiple specialized agents (HackerNews Researcher, Article Reader, Web Searcher)
+    - Each agent's work becomes a task with clear state and results
+    - Orchestrators can coordinate complex workflows by chaining tasks
+
+    **Parallel Execution**
+    - Multiple tasks can run simultaneously with unique task IDs
+    - Example: Fetch articles while enriching with web research in parallel
+
+    **Dependency Management**
+    - Use `referenceTaskIds` to chain tasks together
+    - Later tasks can reference earlier task results
+    - Build complex workflows: Task A → Task B (depends on A) → Task C (depends on B)
+
+    **Context Continuity**
+    - Multiple tasks share the same `contextId` for conversation history
+    - Maintain context across a series of related requests
+
+    This aligns with the A2A Protocol's "Task-only Agent" pattern where **all responses are Task objects**,
+    enabling orchestration at scale.
+
+    ## Getting Started
+
+    ### Authentication
+    All JSON-RPC requests require a Bearer token in the Authorization header:
+    ```
+    Authorization: Bearer YOUR_TOKEN_HERE
+    ```
+
+    ### Basic Workflow (Async Task Pattern)
+
+    This API uses an **asynchronous task pattern**. When you send a message, you receive a task ID
+    and must poll for completion:
+
+    **Step 1: Send a message** (creates a task)
+    ```bash
+    curl -X POST https://hackernews-team-agent.bindu-agents.bindus.directory \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer YOUR_TOKEN" \
+      -d '{
+        "jsonrpc": "2.0",
+        "method": "message/send",
+        "params": {
+          "message": {
+            "role": "user",
+            "parts": [{"kind": "text", "text": "Summarize top 5 HackerNews stories"}],
+            "kind": "message",
+            "messageId": "550e8400-e29b-41d4-a716-446655440038",
+            "contextId": "550e8400-e29b-41d4-a716-446655440038",
+            "taskId": "550e8400-e29b-41d4-a716-446655440078"
+          }
+        },
+        "id": "550e8400-e29b-41d4-a716-446655440024"
+      }'
+    ```
+    Response: Task with `"state": "submitted"`
+
+    **Step 2: Poll for task status** (check if working/completed)
+    ```bash
+    curl -X POST https://hackernews-team-agent.bindu-agents.bindus.directory \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer YOUR_TOKEN" \
+      -d '{
+        "jsonrpc": "2.0",
+        "method": "tasks/get",
+        "params": {"taskId": "550e8400-e29b-41d4-a716-446655440078"},
+        "id": "550e8400-e29b-41d4-a716-446655440014"
+      }'
+    ```
+    Response: Task with `"state": "working"` or `"state": "completed"`
+
+    **Step 3: Get results** (when state is "completed")
+    The completed task includes:
+    - `history`: Full conversation history (user message + assistant response)
+    - `artifacts`: Structured results with the final summary
+
+    ### Available JSON-RPC Methods
+
+    - **message/send** - Send a message and create a new task
+    - **tasks/get** - Get task details by ID (use for polling)
+    - **tasks/list** - List all tasks with pagination
+    - **tasks/cancel** - Cancel a running task
+    - **tasks/feedback** - Submit feedback for a completed task
+    - **contexts/list** - List conversation contexts
+    - **contexts/clear** - Clear a conversation context
+
+    ### Task States
+
+    - `submitted` - Task created, not yet started
+    - `working` - Task is being processed by agents
+    - `completed` - Task finished successfully (check artifacts for results)
+    - `failed` - Task encountered an error
+    - `canceled` - Task was canceled by user
+    - `input-required` - Task needs additional input from user
+
+    ### Advanced: Parallel Execution & Task Chaining
+
+    **Running Multiple Tasks in Parallel:**
+    ```bash
+    # Create Task 1
+    curl -X POST ... -d '{"method": "message/send", "params": {"message": {"taskId": "task-1", ...}}}'
+    
+    # Create Task 2 (runs in parallel with Task 1)
+    curl -X POST ... -d '{"method": "message/send", "params": {"message": {"taskId": "task-2", ...}}}'
+    
+    # Poll both tasks independently
+    curl -X POST ... -d '{"method": "tasks/get", "params": {"taskId": "task-1"}}'
+    curl -X POST ... -d '{"method": "tasks/get", "params": {"taskId": "task-2"}}'
+    ```
+
+    **Chaining Tasks with Dependencies:**
+    ```bash
+    # Task 1: Fetch stories
+    curl -X POST ... -d '{
+      "method": "message/send",
+      "params": {
+        "message": {
+          "taskId": "fetch-task",
+          "parts": [{"text": "Get top 10 HackerNews stories"}]
+        }
+      }
+    }'
+    
+    # Wait for Task 1 to complete, then create Task 2 that references it
+    curl -X POST ... -d '{
+      "method": "message/send",
+      "params": {
+        "message": {
+          "taskId": "analyze-task",
+          "referenceTaskIds": ["fetch-task"],
+          "parts": [{"text": "Analyze sentiment of these stories"}]
+        }
+      }
+    }'
+    ```
+
+    ### Example Use Cases
+
+    - "What are the top AI stories on HackerNews today?"
+    - "Summarize the top 5 trending stories on HackerNews"
+    - "Get the latest HackerNews posts about machine learning"
+    - "Analyze trending discussions about web development"
   version: 1.0.0
 servers:
   - url: https://hackernews-team-agent.bindu-agents.bindus.directory
@@ -19,7 +167,22 @@ paths:
   /:
     post:
       summary: JSON-RPC 2.0 endpoint
-      description: All JSON-RPC methods are sent as POST requests to this endpoint.
+      description: |
+        All JSON-RPC methods are sent as POST requests to this endpoint.
+        
+        **Available Methods:**
+        - `message/send` - Send a message and create a new task
+        - `tasks/get` - Get task details by ID (use for polling)
+        - `tasks/list` - List all tasks
+        - `tasks/cancel` - Cancel a running task
+        - `tasks/feedback` - Submit feedback for a task
+        - `contexts/list` - List conversation contexts
+        - `contexts/clear` - Clear a conversation context
+        
+        **Async Task Pattern:**
+        1. Call `message/send` to create a task (returns with state "submitted")
+        2. Poll `tasks/get` until state changes to "completed" (or "failed")
+        3. Extract results from the `artifacts` array in the completed task
       operationId: jsonRpc
       requestBody:
         required: true
@@ -27,6 +190,55 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/JsonRpcRequest'
+            examples:
+              messageSend:
+                summary: Send a message (Step 1 - Create Task)
+                description: Creates a new task to analyze HackerNews stories
+                value:
+                  jsonrpc: "2.0"
+                  method: "message/send"
+                  params:
+                    message:
+                      role: "user"
+                      parts:
+                        - kind: "text"
+                          text: "Summarize the top 5 trending stories on HackerNews"
+                      kind: "message"
+                      messageId: "550e8400-e29b-41d4-a716-446655440038"
+                      contextId: "550e8400-e29b-41d4-a716-446655440038"
+                      taskId: "550e8400-e29b-41d4-a716-446655440078"
+                    configuration:
+                      acceptedOutputModes:
+                        - "application/json"
+                  id: "550e8400-e29b-41d4-a716-446655440024"
+              tasksGet:
+                summary: Get task status (Step 2 - Poll for Completion)
+                description: Check if the task is completed and retrieve results
+                value:
+                  jsonrpc: "2.0"
+                  method: "tasks/get"
+                  params:
+                    taskId: "550e8400-e29b-41d4-a716-446655440078"
+                  id: "550e8400-e29b-41d4-a716-446655440014"
+              tasksList:
+                summary: List all tasks
+                description: Get a paginated list of all tasks
+                value:
+                  jsonrpc: "2.0"
+                  method: "tasks/list"
+                  params:
+                    limit: 10
+                    offset: 0
+                  id: "550e8400-e29b-41d4-a716-446655440025"
+              tasksCancel:
+                summary: Cancel a task
+                description: Cancel a running or submitted task
+                value:
+                  jsonrpc: "2.0"
+                  method: "tasks/cancel"
+                  params:
+                    taskId: "550e8400-e29b-41d4-a716-446655440078"
+                  id: "550e8400-e29b-41d4-a716-446655440026"
       responses:
         '200':
           description: Successful JSON-RPC response
@@ -34,12 +246,291 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/JsonRpcResponse'
+              examples:
+                messageSendSubmitted:
+                  summary: Task created (state = submitted)
+                  description: Initial response after sending a message
+                  value:
+                    jsonrpc: "2.0"
+                    id: "550e8400-e29b-41d4-a716-446655440024"
+                    result:
+                      id: "550e8400-e29b-41d4-a716-446655440078"
+                      context_id: "550e8400-e29b-41d4-a716-446655440038"
+                      kind: "task"
+                      status:
+                        state: "submitted"
+                        timestamp: "2026-02-25T16:49:55.802201+00:00"
+                      history:
+                        - kind: "message"
+                          role: "user"
+                          parts:
+                            - kind: "text"
+                              text: "Summarize the top 5 trending stories on HackerNews"
+                          task_id: "550e8400-e29b-41d4-a716-446655440078"
+                          context_id: "550e8400-e29b-41d4-a716-446655440038"
+                          message_id: "550e8400-e29b-41d4-a716-446655440038"
+                      artifacts: []
+                      metadata: {}
+                tasksGetWorking:
+                  summary: Task in progress (state = working)
+                  description: Response when polling a task that is still processing
+                  value:
+                    jsonrpc: "2.0"
+                    id: "550e8400-e29b-41d4-a716-446655440014"
+                    result:
+                      id: "550e8400-e29b-41d4-a716-446655440088"
+                      context_id: "550e8400-e29b-41d4-a716-446655440038"
+                      kind: "task"
+                      status:
+                        state: "working"
+                        timestamp: "2026-03-09T17:43:41.425656+00:00"
+                      history:
+                        - kind: "message"
+                          role: "user"
+                          parts:
+                            - kind: "text"
+                              text: "Summarize the top 5 trending stories on HackerNews"
+                          task_id: "550e8400-e29b-41d4-a716-446655440088"
+                          context_id: "550e8400-e29b-41d4-a716-446655440038"
+                          message_id: "550e8400-e29b-41d4-a716-446655440038"
+                      artifacts: []
+                      metadata: {}
+                tasksGetCompleted:
+                  summary: Task completed (state = completed)
+                  description: Final response with results in artifacts array
+                  value:
+                    jsonrpc: "2.0"
+                    id: "550e8400-e29b-41d4-a716-446655440014"
+                    result:
+                      id: "550e8400-e29b-41d4-a716-446655440088"
+                      context_id: "550e8400-e29b-41d4-a716-446655440038"
+                      kind: "task"
+                      status:
+                        state: "completed"
+                        timestamp: "2026-03-09T17:45:50.512110+00:00"
+                      history:
+                        - kind: "message"
+                          role: "user"
+                          parts:
+                            - kind: "text"
+                              text: "Summarize the top 5 trending stories on HackerNews"
+                          task_id: "550e8400-e29b-41d4-a716-446655440088"
+                          context_id: "550e8400-e29b-41d4-a716-446655440038"
+                          message_id: "550e8400-e29b-41d4-a716-446655440038"
+                        - kind: "message"
+                          role: "assistant"
+                          parts:
+                            - kind: "text"
+                              text: "Here are the top 5 trending stories on HackerNews:\n\n1. **Building a Procedural Hex Map with Wave Function Collapse**\n   - Technical article about procedurally generated maps\n   - Built with Three.js WebGPU\n\n2. **Florida Judge Rules Red Light Camera Tickets Unconstitutional**\n   - Legal ruling in Broward County\n   - Could impact similar cases statewide\n\n..."
+                          task_id: "550e8400-e29b-41d4-a716-446655440088"
+                          context_id: "550e8400-e29b-41d4-a716-446655440038"
+                          message_id: "32f926ac-a55a-4e47-9fd5-9986cd07ef65"
+                      artifacts:
+                        - name: "result"
+                          parts:
+                            - kind: "text"
+                              text: "Here are the top 5 trending stories on HackerNews:\n\n1. **Building a Procedural Hex Map with Wave Function Collapse**..."
+                          artifact_id: "8671786b-2d36-4718-9ccc-dad35acd630a"
+                      metadata: {}
         '400':
           description: Invalid JSON-RPC request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonRpcResponse'
+              example:
+                jsonrpc: "2.0"
+                id: "550e8400-e29b-41d4-a716-446655440024"
+                error:
+                  code: -32600
+                  message: "Invalid Request"
         '401':
           description: Unauthorized - missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              example:
+                error: "Unauthorized"
       security:
         - bearerAuth: []
+      x-code-samples:
+        - lang: 'curl'
+          label: 'Step 1: Send Message'
+          source: |
+            curl --location 'https://hackernews-team-agent.bindu-agents.bindus.directory' \
+            --header 'Content-Type: application/json' \
+            --header 'Authorization: Bearer YOUR_TOKEN_HERE' \
+            --data '{
+              "jsonrpc": "2.0",
+              "method": "message/send",
+              "params": {
+                "message": {
+                  "role": "user",
+                  "parts": [
+                    {
+                      "kind": "text",
+                      "text": "Summarize the top 5 trending stories on HackerNews"
+                    }
+                  ],
+                  "kind": "message",
+                  "messageId": "550e8400-e29b-41d4-a716-446655440038",
+                  "contextId": "550e8400-e29b-41d4-a716-446655440038",
+                  "taskId": "550e8400-e29b-41d4-a716-446655440078"
+                },
+                "configuration": {
+                  "acceptedOutputModes": [
+                    "application/json"
+                  ]
+                }
+              },
+              "id": "550e8400-e29b-41d4-a716-446655440024"
+            }'
+        - lang: 'curl'
+          label: 'Step 2: Poll Task Status'
+          source: |
+            curl --location 'https://hackernews-team-agent.bindu-agents.bindus.directory' \
+            --header 'Content-Type: application/json' \
+            --header 'Authorization: Bearer YOUR_TOKEN_HERE' \
+            --data '{
+              "jsonrpc": "2.0",
+              "method": "tasks/get",
+              "params": {
+                "taskId": "550e8400-e29b-41d4-a716-446655440078"
+              },
+              "id": "550e8400-e29b-41d4-a716-446655440014"
+            }'
+        - lang: 'python'
+          label: 'Python Example'
+          source: |
+            import requests
+            import time
+            import uuid
+
+            BASE_URL = "https://hackernews-team-agent.bindu-agents.bindus.directory"
+            TOKEN = "YOUR_TOKEN_HERE"
+            
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {TOKEN}"
+            }
+            
+            # Step 1: Send message
+            task_id = str(uuid.uuid4())
+            message_payload = {
+                "jsonrpc": "2.0",
+                "method": "message/send",
+                "params": {
+                    "message": {
+                        "role": "user",
+                        "parts": [{"kind": "text", "text": "Summarize top 5 HackerNews stories"}],
+                        "kind": "message",
+                        "messageId": str(uuid.uuid4()),
+                        "contextId": str(uuid.uuid4()),
+                        "taskId": task_id
+                    }
+                },
+                "id": str(uuid.uuid4())
+            }
+            
+            response = requests.post(BASE_URL, json=message_payload, headers=headers)
+            print(f"Task created: {response.json()}")
+            
+            # Step 2: Poll for completion
+            while True:
+                poll_payload = {
+                    "jsonrpc": "2.0",
+                    "method": "tasks/get",
+                    "params": {"taskId": task_id},
+                    "id": str(uuid.uuid4())
+                }
+                
+                response = requests.post(BASE_URL, json=poll_payload, headers=headers)
+                result = response.json()["result"]
+                state = result["status"]["state"]
+                
+                print(f"Task state: {state}")
+                
+                if state == "completed":
+                    print("Results:", result["artifacts"])
+                    break
+                elif state == "failed":
+                    print("Task failed")
+                    break
+                
+                time.sleep(5)  # Wait 5 seconds before polling again
+        - lang: 'javascript'
+          label: 'JavaScript Example'
+          source: |
+            const BASE_URL = "https://hackernews-team-agent.bindu-agents.bindus.directory";
+            const TOKEN = "YOUR_TOKEN_HERE";
+            
+            async function analyzeHackerNews() {
+              const taskId = crypto.randomUUID();
+              
+              // Step 1: Send message
+              const messageResponse = await fetch(BASE_URL, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${TOKEN}`
+                },
+                body: JSON.stringify({
+                  jsonrpc: "2.0",
+                  method: "message/send",
+                  params: {
+                    message: {
+                      role: "user",
+                      parts: [{kind: "text", text: "Summarize top 5 HackerNews stories"}],
+                      kind: "message",
+                      messageId: crypto.randomUUID(),
+                      contextId: crypto.randomUUID(),
+                      taskId: taskId
+                    }
+                  },
+                  id: crypto.randomUUID()
+                })
+              });
+              
+              console.log("Task created:", await messageResponse.json());
+              
+              // Step 2: Poll for completion
+              while (true) {
+                const pollResponse = await fetch(BASE_URL, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${TOKEN}`
+                  },
+                  body: JSON.stringify({
+                    jsonrpc: "2.0",
+                    method: "tasks/get",
+                    params: {taskId: taskId},
+                    id: crypto.randomUUID()
+                  })
+                });
+                
+                const result = await pollResponse.json();
+                const state = result.result.status.state;
+                
+                console.log("Task state:", state);
+                
+                if (state === "completed") {
+                  console.log("Results:", result.result.artifacts);
+                  break;
+                } else if (state === "failed") {
+                  console.log("Task failed");
+                  break;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 5000));
+              }
+            }
+            
+            analyzeHackerNews();
   '/.well-known/agent.json':
     get:
       summary: Get Agent Card
@@ -338,6 +829,11 @@ components:
     # MessageSend
     MessageSendParams:
       type: object
+      description: |
+        Parameters for sending a message to create a new task.
+        
+        **This creates an asynchronous task** - the response will contain a task ID with state "submitted".
+        You must poll the task using `tasks/get` to check when it completes.
       required:
         - message
       properties:
@@ -345,17 +841,24 @@ components:
           $ref: '#/components/schemas/UserMessage'
         configuration:
           type: object
+          description: Configuration options for the task execution
           properties:
             acceptedOutputModes:
               type: array
+              description: Preferred output formats (e.g., "application/json" for structured data)
               items:
                 type: string
                 enum: ['application/json', 'text/plain']
         skillId:
           type: string
-          description: Optional skill ID to invoke
+          description: Optional skill ID to invoke (e.g., "hackernews-analysis-v1")
     UserMessage:
       type: object
+      description: |
+        A message from the user to the agent.
+        
+        **Important:** All IDs (messageId, contextId, taskId) should be UUIDs generated by the client.
+        Use the same contextId for related messages in a conversation.
       required:
         - role
         - parts
@@ -367,24 +870,46 @@ components:
         role:
           type: string
           enum: ['user']
+          description: Must be "user" for messages sent to the agent
         parts:
           type: array
+          description: Array of message parts (currently only text is supported)
           items:
             $ref: '#/components/schemas/MessagePart'
         kind:
           type: string
           enum: ['message']
+          description: Must be "message"
         messageId:
           type: string
           format: uuid
+          description: Unique identifier for this message (client-generated UUID)
         contextId:
           type: string
           format: uuid
+          description: Conversation context ID - use the same ID for related messages
         taskId:
           type: string
           format: uuid
+          description: Task ID for this request (client-generated UUID) - use this to poll for results
         referenceTaskIds:
           type: array
+          description: |
+            Optional array of task IDs that this task depends on or references.
+            
+            **Use Cases:**
+            - **Task Chaining**: Reference a completed task to build on its results
+            - **Context Sharing**: Link related tasks in a workflow
+            - **Dependency Management**: Indicate this task needs results from other tasks
+            
+            **Example Workflow:**
+            ```
+            Task1: "Fetch top HackerNews stories" → completes with story list
+            Task2: "Analyze sentiment" (referenceTaskIds: [Task1]) → uses Task1 results
+            Task3: "Create report" (referenceTaskIds: [Task1, Task2]) → combines both
+            ```
+            
+            The agent can access results from referenced tasks to provide better context.
           items:
             type: string
             format: uuid
@@ -427,25 +952,57 @@ components:
           type: object
     TaskStatus:
       type: object
+      description: |
+        Current status of a task.
+        
+        **Task Lifecycle:**
+        
+        **Non-Terminal States (Task Open, Mutable):**
+        1. `submitted` - Task created, queued for processing
+        2. `working` - Task is being processed by agents
+        3. `input-required` - Task needs additional input from user
+        4. `auth-required` - Task needs authentication/authorization
+        
+        **Terminal States (Task Immutable, Final):**
+        - `completed` - Task finished successfully (check artifacts for results)
+        - `failed` - Task encountered an error
+        - `canceled` - Task was canceled by user
+        - `rejected` - Task was rejected (e.g., capability mismatch)
+        
+        **Important:** Once a task reaches a terminal state, it becomes immutable and cannot be restarted.
+        To refine or continue work, create a new task with `referenceTaskIds` pointing to the completed task.
       required:
         - state
         - timestamp
       properties:
         state:
           type: string
-          enum: [submitted, input-required, completed, canceled, failed]
+          enum: [submitted, working, input-required, auth-required, completed, failed, canceled, rejected]
+          description: |
+            Current state of the task:
+            
+            **Non-Terminal (poll again):**
+            - **submitted**: Task created, not yet started
+            - **working**: Task is being processed by agents
+            - **input-required**: Task needs more information from user
+            - **auth-required**: Task needs authentication/authorization
+            
+            **Terminal (final state):**
+            - **completed**: Task finished - results are in artifacts array
+            - **failed**: Task encountered an error (check history for details)
+            - **canceled**: Task was canceled by user
+            - **rejected**: Task was rejected (e.g., agent cannot handle this request)
         timestamp:
           type: string
           format: date-time
+          description: ISO 8601 timestamp of when this state was reached
     HistoryMessage:
       type: object
       properties:
         kind:
           type: string
-          enum: ['message']
         role:
           type: string
-          enum: [user, assistant]
         parts:
           type: array
           items:
@@ -466,53 +1023,81 @@ components:
             format: uuid
     Artifact:
       type: object
+      description: |
+        A structured output artifact from a completed task.
+        
+        The artifact with `name: "result"` contains the final response.
       properties:
         name:
           type: string
+          description: Artifact name (typically "result" for the main output)
         parts:
           type: array
+          description: Content parts of the artifact
           items:
             $ref: '#/components/schemas/MessagePart'
         artifact_id:
           type: string
           format: uuid
+          description: Unique identifier for this artifact
         metadata:
           type: object
+          description: Additional artifact metadata (may include signatures)
     # TasksGet
     TasksGetParams:
       type: object
+      description: |
+        Parameters for retrieving task details.
+        
+        **Use this method to poll for task completion** after calling `message/send`.
+        Poll every 3-5 seconds until the state is "completed", "failed", or "canceled".
       required:
         - taskId
       properties:
         taskId:
           type: string
           format: uuid
+          description: The task ID returned from message/send
     TasksGetResult:
       $ref: '#/components/schemas/Task'
     Task:
       type: object
+      description: |
+        A task represents an asynchronous operation.
+        
+        **When state is "completed":**
+        - `history` contains the full conversation (user message + assistant response)
+        - `artifacts` contains the structured results (check the "result" artifact)
       properties:
         id:
           type: string
           format: uuid
+          description: Unique task identifier
         context_id:
           type: string
           format: uuid
+          description: Conversation context this task belongs to
         kind:
           type: string
           enum: ['task']
+          description: Always "task"
         status:
           $ref: '#/components/schemas/TaskStatus'
         history:
           type: array
+          description: Conversation history (user messages and assistant responses)
           items:
             $ref: '#/components/schemas/HistoryMessage'
         artifacts:
           type: array
+          description: |
+            Structured results when task is completed.
+            Look for the artifact with name "result" for the final output.
           items:
             $ref: '#/components/schemas/Artifact'
         metadata:
           type: object
+          description: Additional task metadata
     # TasksList
     TasksListParams:
       type: object
