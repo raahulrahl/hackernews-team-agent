@@ -134,7 +134,7 @@ info:
       "method": "message/send",
       "params": {
         "message": {
-          "taskId": "fetch-task",
+          "taskId": "550e8400-e29b-41d4-a716-446655440078",
           "parts": [{"text": "Get top 10 HackerNews stories"}]
         }
       }
@@ -145,8 +145,8 @@ info:
       "method": "message/send",
       "params": {
         "message": {
-          "taskId": "analyze-task",
-          "referenceTaskIds": ["fetch-task"],
+          "taskId": "550e8400-e29b-41d4-a716-446655440079",
+          "referenceTaskIds": ["550e8400-e29b-41d4-a716-446655440078"],
           "parts": [{"text": "Analyze sentiment of these stories"}]
         }
       }
