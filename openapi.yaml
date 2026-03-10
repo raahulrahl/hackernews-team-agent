@@ -195,7 +195,7 @@ paths:
             examples:
               messageSend:
                 summary: Send a message (Step 1 - Create Task)
-                description: Creates a new task to analyze HackerNews stories
+                description: Creates a new task
                 value:
                   jsonrpc: "2.0"
                   method: "message/send"
